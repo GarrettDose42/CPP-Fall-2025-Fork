@@ -13,6 +13,7 @@ int main()
     //      If multiple words with the longest length are entered, only keep
     //      the first one.
 
+
     //Variants to try:
     // - If there are multiple longest words, keep the last one.
     // - Keep _all_ words with the longest length and print them out at the end.
@@ -21,7 +22,10 @@ int main()
     std::string word{};
     while (std::cin >> word)
     {
-        // ???
+        if(word.length() >= longest_word.length())
+        {
+            longest_word = word;
+        }
     }
 
     std::cout << "The longest word you entered was \"" << longest_word << "\"" << std::endl;

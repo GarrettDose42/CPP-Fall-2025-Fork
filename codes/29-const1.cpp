@@ -9,9 +9,11 @@ int main()
     const float PI{3.1415};
 
     int x{6};
-    // std::cout << x << " " << y << std::endl;
+    const int& y{x};
+
+     std::cout << x << " " << y << std::endl;
     x = 10;
-    // std::cout << x << " " << y << std::endl;
+     std::cout << x << " " << y << std::endl;
 
     return 0;
 }

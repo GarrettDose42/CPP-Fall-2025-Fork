@@ -16,5 +16,9 @@ int main()
 
     std::cout << "After: " << '[' << lower_string << ']' << std::endl;
 
+    for(char c : original_string){
+        lower_string += std::tolower(c);
+    }
+
     return 0;
 }

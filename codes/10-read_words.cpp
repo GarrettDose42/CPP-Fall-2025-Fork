@@ -8,7 +8,11 @@ int main()
     std::cout << "Enter two words: ";
 
     //Task: Read two words from the user into word1 and word2
+    std::cin >> word1;
+    std::cin >> word2;
+
 
     std::cout << "You entered [" << word1 << "] and [" << word2 << "]" << std::endl;
     return 0;
 }
+// "Hello "

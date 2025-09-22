@@ -12,13 +12,23 @@ int main()
     //          j  | unsigned int |      6
     //          g  | double       | 10.187
 
+    /*int i = -116;
+    unsigned int j = 6;
+    double g = 10.187;*/
+    
     //Task 2: Once Task 1 is complete and tested, comment out the
     //        declarations above and rewrite them using uniform
     //        initialization syntax.
 
+    //int i{-116};
+    unsigned int j{6};
+    double g{10.187};
+
     //Task 3: What is the difference between an "uninitialized variable"
     //        and a variable which is declared with an empty uniform
     //        initializer?
+
+    int i{};
 
     //Task 4: What happens if the wrong type is used inside the initializer?
 

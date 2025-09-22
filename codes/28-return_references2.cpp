@@ -3,7 +3,7 @@
 
 char &get_character(std::string &s)
 {
-    int last_index{s.length() - 1};
+    unsigned long last_index{s.length() - 1};
 
     return s.at(last_index);
 }

@@ -1,3 +1,8 @@
+/**
+ * Copyright (C) 2021 Bill Bird
+ * This file is part of Bill Bird's CSC 116 teaching materials.
+ */
+
 #include <iostream>
 #include <string> // Don't forget to include <string> if you use strings
 #include <cctype> // cctype contains std::tolower (and C++ declarations of other ctype.h functions)

@@ -1,3 +1,6 @@
+# Acknowledgments
+Most of the materials in this course are based on Bill Bird CSC116 course
+
 # CSC 116 - Introduction to C++ - Fall 2024
 
 Students successfully completing CSC 116 will achieve the following learning outcomes:

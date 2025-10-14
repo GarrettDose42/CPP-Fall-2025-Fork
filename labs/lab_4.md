@@ -15,7 +15,7 @@ std::sort(vec.begin(), vec.end());
   Numbers:
   71 49 92 87 0 66 81 74 0 51 64 94 79
 
-The median is 68.5
+The median is 71
 ```
 
 

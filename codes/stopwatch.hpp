@@ -24,6 +24,7 @@ public:
 
     double elapsed()
     {
+        return std::chrono::duration<double>(end_time - start_time).count();
     }
 
 private:

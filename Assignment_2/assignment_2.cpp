@@ -5,6 +5,7 @@
 #include <fstream>   //Needed by read_sailings to work with files
 #include <stdexcept> //Needed by read_sailings to handle exceptions
 #include <iomanip>   //Needed by print_sailing to format output
+#include <algorithm>
 
 /* A structure type to represent a year/month/day combination */
 struct Date
@@ -140,8 +141,101 @@ struct InvalidTimeException
 */
 Sailing parse_sailing(std::string const &input_line)
 {
-    /* Your Code Here */
+    Sailing s{};
+
+    // Split line by commas
+    std::vector<std::string> fields;
+    std::string current;
+    for (char c : input_line)
+    {
+        if (c == ',')
+        {
+            fields.push_back(current);
+            current.clear();
+        }
+        else
+        {
+            current += c;
+        }
+    }
+    fields.push_back(current);
+
+    // wrong number of fields
+    if (fields.size() != 11)
+    {
+        IncompleteLineException e;
+        e.num_fields = fields.size();
+        throw e;
+    }
+
+    // Trim whitespace
+    auto trim = [](std::string &str)
+    {
+        size_t start = 0;
+        while (start < str.size() && std::isspace(static_cast<unsigned char>(str[start])))
+            ++start;
+        size_t end = str.size();
+        while (end > start && std::isspace(static_cast<unsigned char>(str[end - 1])))
+            --end;
+        str = str.substr(start, end - start);
+    };
+    for (auto &f : fields)
+        trim(f);
+
+    // empty or whitespace-only field 
+    for (size_t i = 0; i < fields.size(); ++i)
+    {
+        if (fields[i].empty())
+        {
+            EmptyFieldException e;
+            e.which_field = i;
+            throw e;
+        }
+    }
+
+    
+    auto starts_with_digit = [](const std::string &str)
+    {
+        return !str.empty() && std::isdigit(static_cast<unsigned char>(str[0]));
+    };
+
+    
+    std::vector<int> numeric_indices{0, 3, 4, 5, 6, 7, 9, 10};
+    for (int idx : numeric_indices)
+    {
+        if (!starts_with_digit(fields[idx]))
+        {
+            NonNumericDataException e;
+            e.bad_field = fields[idx];
+            throw e;
+        }
+    }
+
+    // Parse numbers
+    s.route_number = std::stoi(fields[0]);
+    s.source_terminal = fields[1];
+    s.dest_terminal = fields[2];
+    s.departure_date.year = std::stoi(fields[3]);
+    s.departure_date.month = std::stoi(fields[4]);
+    s.departure_date.day = std::stoi(fields[5]);
+    s.scheduled_departure_time.hour = std::stoi(fields[6]);
+    s.scheduled_departure_time.minute = std::stoi(fields[7]);
+    s.vessel_name = fields[8];
+    s.expected_duration = std::stoi(fields[9]);
+    s.actual_duration = std::stoi(fields[10]);
+
+    // invalid time
+    if (s.scheduled_departure_time.hour < 0 || s.scheduled_departure_time.hour > 23 ||
+        s.scheduled_departure_time.minute < 0 || s.scheduled_departure_time.minute > 59)
+    {
+        InvalidTimeException e;
+        e.bad_time = s.scheduled_departure_time;
+        throw e;
+    }
+
+    return s;
 }
+
 
 /* performance_by_route(sailings)
    Given a vector of Sailing instances (in no particular order), return
@@ -168,7 +262,29 @@ Sailing parse_sailing(std::string const &input_line)
 */
 std::vector<RouteStatistics> performance_by_route(std::vector<Sailing> const &sailings)
 {
-    /* Your Code Here */
+    std::vector<RouteStatistics> results;
+    for (const auto &s : sailings)
+    {
+        // Find existing route
+        auto it = std::find_if(results.begin(), results.end(),
+                               [&](const RouteStatistics &r)
+                               { return r.route_number == s.route_number; });
+        if (it == results.end())
+        {
+            RouteStatistics r;
+            r.route_number = s.route_number;
+            r.total_sailings = 1;
+            r.late_sailings = (s.actual_duration >= s.expected_duration + 5) ? 1 : 0;
+            results.push_back(r);
+        }
+        else
+        {
+            it->total_sailings++;
+            if (s.actual_duration >= s.expected_duration + 5)
+                it->late_sailings++;
+        }
+    }
+    return results;
 }
 
 /* best_days(sailings)
@@ -196,7 +312,54 @@ std::vector<RouteStatistics> performance_by_route(std::vector<Sailing> const &sa
 */
 std::vector<DayStatistics> best_days(std::vector<Sailing> const &sailings)
 {
-    /* Your Code Here */
+    std::vector<DayStatistics> day_stats;
+    if (sailings.empty())
+        return day_stats;
+
+    // Aggregate by date
+    for (const auto &s : sailings)
+    {
+        auto it = std::find_if(day_stats.begin(), day_stats.end(),
+                               [&](const DayStatistics &d)
+                               {
+                                   return d.date.year == s.departure_date.year &&
+                                          d.date.month == s.departure_date.month &&
+                                          d.date.day == s.departure_date.day;
+                               });
+        if (it == day_stats.end())
+        {
+            DayStatistics d;
+            d.date = s.departure_date;
+            d.total_sailings = 1;
+            d.late_sailings = (s.actual_duration >= s.expected_duration + 5) ? 1 : 0;
+            day_stats.push_back(d);
+        }
+        else
+        {
+            it->total_sailings++;
+            if (s.actual_duration >= s.expected_duration + 5)
+                it->late_sailings++;
+        }
+    }
+
+    // Compute lowest ratio
+    double min_ratio = 1e9;
+    for (auto &d : day_stats)
+    {
+        double ratio = (d.total_sailings == 0) ? 0.0 : (double)d.late_sailings / d.total_sailings;
+        if (ratio < min_ratio)
+            min_ratio = ratio;
+    }
+
+    // Collect all days with min_ratio
+    std::vector<DayStatistics> best;
+    for (auto &d : day_stats)
+    {
+        double ratio = (d.total_sailings == 0) ? 0.0 : (double)d.late_sailings / d.total_sailings;
+        if (std::abs(ratio - min_ratio) < 1e-9)
+            best.push_back(d);
+    }
+    return best;
 }
 
 /* worst_days(sailings)
@@ -220,7 +383,54 @@ std::vector<DayStatistics> best_days(std::vector<Sailing> const &sailings)
 */
 std::vector<DayStatistics> worst_days(std::vector<Sailing> const &sailings)
 {
-    /* Your Code Here */
+    std::vector<DayStatistics> day_stats;
+    if (sailings.empty())
+        return day_stats;
+
+    // Aggregate by date
+    for (const auto &s : sailings)
+    {
+        auto it = std::find_if(day_stats.begin(), day_stats.end(),
+                               [&](const DayStatistics &d)
+                               {
+                                   return d.date.year == s.departure_date.year &&
+                                          d.date.month == s.departure_date.month &&
+                                          d.date.day == s.departure_date.day;
+                               });
+        if (it == day_stats.end())
+        {
+            DayStatistics d;
+            d.date = s.departure_date;
+            d.total_sailings = 1;
+            d.late_sailings = (s.actual_duration >= s.expected_duration + 5) ? 1 : 0;
+            day_stats.push_back(d);
+        }
+        else
+        {
+            it->total_sailings++;
+            if (s.actual_duration >= s.expected_duration + 5)
+                it->late_sailings++;
+        }
+    }
+
+    // Compute highest ratio
+    double max_ratio = -1.0;
+    for (auto &d : day_stats)
+    {
+        double ratio = (d.total_sailings == 0) ? 0.0 : (double)d.late_sailings / d.total_sailings;
+        if (ratio > max_ratio)
+            max_ratio = ratio;
+    }
+
+    // Collect all days with max_ratio
+    std::vector<DayStatistics> worst;
+    for (auto &d : day_stats)
+    {
+        double ratio = (d.total_sailings == 0) ? 0.0 : (double)d.late_sailings / d.total_sailings;
+        if (std::abs(ratio - max_ratio) < 1e-9)
+            worst.push_back(d);
+    }
+    return worst;
 }
 
 /* You do not have to understand or modify these functions (although they
